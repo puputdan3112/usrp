@@ -1,0 +1,22 @@
+% Inisialisasi USRP Receiver
+serialNumber = 'YOUR_SERIAL_NUMBER'; % Ganti dengan serial number USRP B200 Anda
+usrp = comm.USBReceiver('Platform', 'B200', ...
+    'SerialNumber', serialNumber, ...
+    'CenterFrequency', 2.4e9, ...
+    'Gain', 20, ...
+    'SampleRate', 1e6);
+
+% Menerima data secara terus-menerus
+disp('Mulai penerimaan...');
+while true
+    % Mengatur jumlah sampel yang akan diterima
+    numSamples = 100; % Sesuaikan jumlah sampel sesuai kebutuhan
+    dataRx = step(usrp, numSamples); % Menerima data
+
+    % Mengonversi data ke string
+    receivedString = char(dataRx'); % Mengonversi uint8 kembali menjadi karakter
+    disp(['Data diterima: ', receivedString]); % Menampilkan data yang diterima
+end
+
+% Menutup koneksi (kode ini tidak akan pernah dijalankan dalam loop tak terbatas)
+release(usrp);
