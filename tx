@@ -1,0 +1,27 @@
+% Inisialisasi USRP Transmitter
+serialNumber = 'YOUR_SERIAL_NUMBER'; % Ganti dengan serial number USRP B200 Anda
+tx = comm.USBTransmitter('Platform', 'B200', ...
+    'SerialNumber', serialNumber, ...
+    'CenterFrequency', 2.4e9, ...
+    'Gain', 20, ...
+    'SampleRate', 1e6);
+
+% String yang akan ditransmisikan
+message = 'Hello World';
+dataTx = uint8(message); % Mengonversi string menjadi format uint8
+
+% Mengatur pengulangan
+numRepeats = 5; % Jumlah pengulangan untuk setiap pengiriman
+
+% Transmit data secara terus-menerus
+disp('Mulai transmisi...');
+while true
+    for i = 1:numRepeats
+        step(tx, dataTx); % Mengirim data
+    end
+    pause(1); % Pause 1 detik sebelum mengirim ulang
+end
+
+% Menutup koneksi (kode ini tidak akan pernah dijalankan dalam loop tak terbatas)
+release(tx);
+disp('Data telah ditransmisikan.');
