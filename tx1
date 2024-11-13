@@ -1,0 +1,41 @@
+% Program Transmitter (TX) - USRP Ettus B200 (Mengirimkan String 'Hello im Tx' dengan QPSK)
+
+% Parameters
+platform = 'B200';  % Platform Ettus B200
+serialNumTx = '32432FB';  % Serial number untuk perangkat TX
+centerFrequency = 2.4e9;  % Frekuensi transmisi (2.4 GHz)
+gainTx = 10;  % Gain untuk transmisi
+fs = 1e6;  % Sample rate (1 MHz)
+
+% Create USRP transmitter object
+usrpTx = comm.SDRuTransmitter(...
+    'Platform', platform, ...
+    'SerialNum', serialNumTx, ...
+    'CenterFrequency', centerFrequency, ...
+    'Gain', gainTx, ...
+    'InterpolationFactor', 1);  % Interpolation factor
+
+% String yang ingin dikirim
+message = 'Hello im Tx';  % Pesan yang ingin dikirimkan
+disp(['Message to transmit: ', message]);
+
+% Mengonversi string menjadi bytes (ASCII)
+messageBytes = uint8(message);  % Konversi string menjadi array byte (uint8)
+
+% Mengonversi bytes menjadi bit stream
+bitStream = reshape(de2bi(messageBytes, 8)', [], 1);  % Mengubah byte menjadi bit stream
+
+% Modulasi QPSK (mengelompokkan 2 bit per simbol)
+modSignal = pskmod(bitStream, 4, pi/4);  % Modulasi QPSK (4-QAM)
+
+% Mengirimkan sinyal dalam loop
+disp('Starting Transmission...');
+while true
+    step(usrpTx, modSignal);  % Mengirimkan sinyal yang dimodulasi
+    disp('Signal transmitted');
+    pause(0.1);  % Delay 100ms (sesuaikan jika diperlukan)
+end
+
+% Release objek setelah selesai
+release(usrpTx);
+disp('Transmission completed.');
