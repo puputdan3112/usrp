@@ -1,0 +1,82 @@
+% Program Receiver (RX) - USRP Ettus B200 (Menerima String dari TX dan Menampilkan)
+
+% Parameters
+platform = 'B200';  % Platform Ettus B200
+serialNumRx = '3243305';  % Serial number untuk perangkat RX
+centerFrequency = 2.4e9;  % Frekuensi transmisi yang digunakan oleh TX (misalnya 2.4 GHz)
+gainRx = 10;  % Gain untuk penerimaan
+fs = 1e6;  % Sample rate (1 MHz)
+
+% Create USRP receiver object
+usrpRx = comm.SDRuReceiver(...
+    'Platform', platform, ...
+    'SerialNum', serialNumRx, ...
+    'CenterFrequency', centerFrequency, ...
+    'Gain', gainRx, ...
+    'DecimationFactor', 1, ...  % Tidak ada pengurangan sample rate
+    'SamplesPerFrame', 1024, ...  % Ukuran frame penerimaan (1024 sampel per frame)
+    'FrameLength', 1024);  % Panjang frame untuk penerimaan
+
+% Setup untuk grafik
+figure;
+hPlot = plot(nan, nan);  % Plot awal dengan data kosong
+xlabel('Sample Index');
+ylabel('Magnitude');
+title('Real-Time Magnitude of Received Sinusoidal Signal');
+grid on;
+
+% Loop untuk menerima data secara real-time
+disp('Starting Reception...');
+
+while true
+    % Terima data dari perangkat RX
+    receivedSignal = step(usrpRx);
+
+    % Mengonversi data menjadi double (untuk menangani tipe integer kompleks)
+    receivedSignal = double(receivedSignal);
+    
+    % Jika data diterima, tampilkan dan proses data
+    if any(receivedSignal)  % Memeriksa apakah ada data yang diterima (non-zero)
+        disp('Data received and moving...');
+        
+        % Menghitung magnitude dari sinyal yang diterima
+        magnitude = abs(receivedSignal);
+        
+        % Update grafik dengan magnitude yang diterima
+        set(hPlot, 'YData', magnitude);  % Update data Y dengan magnitude
+        set(hPlot, 'XData', 1:length(magnitude));  % Update data X (indeks sampel)
+        drawnow;  % Menampilkan grafik secara langsung
+
+        % Demodulasi untuk mendapatkan kembali bit stream
+        demodSignal = pskdemod(receivedSignal, 4, pi/4);  % Demodulasi QPSK
+        
+        % Mengonversi hasil demodulasi menjadi stream bit (2 bit per simbol)
+        % Pastikan hasil demodulasi berada dalam rentang 0-3 untuk QPSK
+        bitStream = [];
+        for k = 1:length(demodSignal)
+            % Setiap simbol (0, 1, 2, 3) akan diubah menjadi 2 bit
+            bitStream = [bitStream; de2bi(demodSignal(k), 2, 'left-msb')'];
+        end
+        
+        % Mengonversi bit-stream menjadi byte
+        numBytes = length(bitStream) / 8;  % Total byte yang diterima
+        bitStream = bitStream(1:8*numBytes);  % Pastikan bitstream memiliki panjang yang tepat
+        receivedBytes = bi2de(reshape(bitStream, 8, [])', 'left-msb');  % Bit stream ke byte
+        
+        % Mengonversi bytes menjadi string
+        receivedMessage = char(receivedBytes);  % Mengonversi byte menjadi string
+
+        % Menampilkan pesan yang diterima
+        disp(['Received message: ', receivedMessage]);
+    else
+        % Tidak ada data yang diterima
+        disp('No data received. Waiting...');
+    end
+
+    % Pause sejenak untuk real-time reception
+    pause(0.1);  % 100ms delay untuk real-time reception
+end
+
+% Release objek setelah selesai
+release(usrpRx);
+disp('Reception completed.');
