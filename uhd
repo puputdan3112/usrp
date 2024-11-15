@@ -1,0 +1,46 @@
+import uhd
+import numpy as np
+import matplotlib.pyplot as plt
+import time
+
+# Parameters for signal generation
+sample_rate = 1e6  # Sample rate in Hz
+center_freq = 2.45e9  # Center frequency (2.45 GHz)
+duration = 1  # Transmission time in seconds
+amplitude = 0.5  # Signal amplitude
+num_samples = int(sample_rate * duration)
+
+# Create a USRP device and configure it
+usrp = uhd.usrp.MultiUSRP()
+
+# Set the transmit and receive streams
+tx_streamer = usrp.get_tx_stream(uhd.stream_args("fc32", "sc16"))
+rx_streamer = usrp.get_rx_stream(uhd.stream_args("fc32", "sc16"))
+
+# Configure the device
+usrp.set_tx_freq(center_freq)
+usrp.set_rx_freq(center_freq)
+usrp.set_tx_rate(sample_rate)
+usrp.set_rx_rate(sample_rate)
+
+# Create a simple sine wave to transmit
+time_vec = np.arange(num_samples) / sample_rate
+tx_signal = amplitude * np.cos(2 * np.pi * 1e3 * time_vec)  # 1 kHz sine wave
+
+# Send the sine wave signal
+tx_streamer.send(tx_signal)
+
+# Wait for the transmission to finish
+time.sleep(duration)
+
+# Now, receive the signal from the device
+rx_signal = np.zeros(num_samples, dtype=np.complex64)
+rx_streamer.receive(rx_signal)
+
+# Plot the received signal
+plt.figure()
+plt.plot(np.real(rx_signal), label='Real part')
+plt.plot(np.imag(rx_signal), label='Imaginary part')
+plt.title('Received Signal')
+plt.legend()
+plt.show()
